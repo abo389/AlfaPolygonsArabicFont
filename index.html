@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+    <title>كاتب - محرر النص التفاعلي</title>
+    <style>
+      @font-face {
+        font-family: "AlfaPolygonsArabic";
+        src: url("AlfaPolygonsArabic-Regular.woff2") format("woff2"),
+          url("AlfaPolygonsArabic-Regular.woff") format("woff");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --bg-dark: #0f0f1a;
+        --surface-dark: #1a1a2e;
+        --text-primary: #ffffff;
+        --text-secondary: #b8b8d0;
+        --accent-glow: rgba(102, 126, 234, 0.3);
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg-dark);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        direction: rtl;
+        padding: 1.5rem;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* خلفية متحركة */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+          radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.1) 0%, transparent 50%);
+        z-index: 0;
+        animation: backgroundShift 15s ease-in-out infinite alternate;
+      }
+
+      @keyframes backgroundShift {
+        0% {
+          opacity: 0.5;
+          transform: scale(1);
+        }
+
+        100% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      .editor-card {
+        background: rgba(26, 26, 46, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 2rem;
+        padding: 2.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        animation: cardFloat 6s ease-in-out infinite;
+      }
+
+      @keyframes cardFloat {
+
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .title {
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 1rem;
+        position: relative;
+        display: inline-block;
+      }
+
+      .title::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 4px;
+        background: var(--primary-gradient);
+        border-radius: 2px;
+        animation: lineWidth 3s ease-in-out infinite;
+      }
+
+      @keyframes lineWidth {
+
+        0%,
+        100% {
+          width: 80px;
+          opacity: 0.7;
+        }
+
+        50% {
+          width: 120px;
+          opacity: 1;
+        }
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        max-width: 600px;
+        margin: 1rem auto 0;
+      }
+
+      .input-section {
+        margin-bottom: 2.5rem;
+      }
+
+      .input-label {
+        display: block;
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        font-weight: 500;
+      }
+
+      .textarea-wrapper {
+        position: relative;
+      }
+
+      .textarea-wrapper::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: var(--primary-gradient);
+        border-radius: 1.5rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+      }
+
+      .textarea-wrapper:focus-within::before {
+        opacity: 1;
+        animation: borderRotate 3s linear infinite;
+      }
+
+      @keyframes borderRotate {
+        0% {
+          filter: hue-rotate(0deg);
+        }
+
+        100% {
+          filter: hue-rotate(360deg);
+        }
+      }
+
+      textarea {
+        width: 100%;
+        padding: 1.5rem;
+        background: rgba(15, 15, 26, 0.6);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 1.5rem;
+        color: var(--text-primary);
+        font-size: 1.2rem;
+        line-height: 1.6;
+        resize: vertical;
+        min-height: 180px;
+        outline: none;
+        transition: all 0.3s ease;
+        font-family: inherit;
+        backdrop-filter: blur(5px);
+      }
+
+      textarea:hover {
+        border-color: rgba(102, 126, 234, 0.5);
+        background: rgba(15, 15, 26, 0.8);
+      }
+
+      textarea:focus {
+        border-color: transparent;
+        background: rgba(15, 15, 26, 0.9);
+        box-shadow: 0 0 30px var(--accent-glow);
+      }
+
+      .output-section {
+        margin-top: 2.5rem;
+        padding-top: 2.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .output-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+
+      .output-title {
+        color: var(--text-primary);
+        font-size: 1.3rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .output-title span {
+        width: 8px;
+        height: 8px;
+        background: #4ade80;
+        border-radius: 50%;
+        display: inline-block;
+        animation: pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+
+        50% {
+          opacity: 0.5;
+          transform: scale(1.2);
+        }
+      }
+
+      .char-count {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.4rem 1rem;
+        border-radius: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .output-text {
+        font-family: "AlfaPolygonsArabic", sans-serif;
+        background: rgba(15, 15, 26, 0.4);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        min-height: 150px;
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        line-height: 1.8;
+        word-break: break-word;
+        box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.5);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .output-text::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--primary-gradient);
+        transform: translateX(-100%);
+      }
+
+      .output-text:empty::before {
+        content: 'سيظهر النص الذي تكتبه هنا...';
+        color: var(--text-secondary);
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 1.1rem;
+        opacity: 0.6;
+      }
+
+      /* تأثيرات إضافية */
+      .floating-shapes {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .shape {
+        position: absolute;
+        background: var(--primary-gradient);
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.15;
+        animation: shapeFloat 20s ease-in-out infinite alternate;
+      }
+
+      .shape1 {
+        width: 300px;
+        height: 300px;
+        top: -100px;
+        right: -100px;
+      }
+
+      .shape2 {
+        width: 400px;
+        height: 400px;
+        bottom: -200px;
+        left: -200px;
+        animation-delay: -5s;
+      }
+
+      @keyframes shapeFloat {
+        0% {
+          transform: translate(0, 0) scale(1);
+        }
+
+        100% {
+          transform: translate(50px, 50px) scale(1.2);
+        }
+      }
+
+      /* تجاوب مع الشاشات الصغيرة */
+      @media (max-width: 768px) {
+        .editor-card {
+          padding: 1.5rem;
+          border-radius: 1.5rem;
+        }
+
+        .title {
+          font-size: 2rem;
+        }
+
+        .output-text {
+          font-size: 1.2rem;
+          padding: 1.5rem;
+        }
+
+        textarea {
+          font-size: 1rem;
+          padding: 1rem;
+          min-height: 150px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        body {
+          padding: 1rem;
+        }
+
+        .editor-card {
+          padding: 1rem;
+        }
+
+        .output-header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      /* دعم الشاشات الكبيرة */
+      @media (min-width: 1600px) {
+        .container {
+          max-width: 1400px;
+        }
+
+        .output-text {
+          font-size: 1.8rem;
+          padding: 2.5rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- أشكال خلفية متحركة -->
+    <div class="floating-shapes">
+      <div class="shape shape1"></div>
+      <div class="shape shape2"></div>
+    </div>
+
+    <div class="container">
+      <div class="editor-card">
+        <div class="header">
+          <h1 class="title">✧ كاتِب ✧</h1>
+          <p class="subtitle">
+            مساحة إبداعية للكتابة بخط AlfaPolygonsArabic المميز
+            <br>
+            جرب الكتابة وشاهد النص يظهر مباشرة بالخط الجديد
+          </p>
+        </div>
+
+        <div class="input-section">
+          <label class="input-label">✎ اكتب هنا:</label>
+          <div class="textarea-wrapper">
+            <textarea id="textInput"
+                      placeholder="اكتب أي شيء تريده هنا وسيظهر بالخط المميز..."
+                      dir="rtl">هذا نص تجريبي لاختبار الخط العربي في المتصفح يجب ان يظهر هذا النص باستخدام خط عبدو المشفر</textarea>
+          </div>
+        </div>
+
+        <div class="output-section">
+          <div class="output-header">
+            <div class="output-title">
+              <span></span>
+              النص بالخط الجديد:
+            </div>
+            <div class="char-count"
+                 id="charCount">عدد الأحرف: ٠</div>
+          </div>
+          <div class="output-text"
+               id="outputText"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // عناصر DOM
+      const textInput = document.getElementById( 'textInput' );
+      const outputText = document.getElementById( 'outputText' );
+      const charCount = document.getElementById( 'charCount' );
+
+      // دالة تحديث النص وعداد الأحرف
+      function updateOutput ()
+      {
+        const text = textInput.value;
+
+        // تحديث النص المعروض
+        outputText.textContent = text || '';
+
+        // تحديث عداد الأحرف بالأرقام العربية
+        const count = text.length;
+        const arabicNumbers = count.toString().replace( /\d/g, d => '٠١٢٣٤٥٦٧٨٩'[ d ] );
+        charCount.textContent = `عدد الأحرف: ${ arabicNumbers }`;
+
+        // إضافة تأثير بسيط عند الكتابة
+        outputText.style.transform = 'scale(1.02)';
+        setTimeout( () =>
+        {
+          outputText.style.transform = 'scale(1)';
+        }, 100 );
+      }
+
+      // تحديث أولي
+      updateOutput();
+
+      // الاستماع للتغييرات في حقل النص
+      textInput.addEventListener( 'input', updateOutput );
+
+      // إضافة تأثيرات تفاعلية إضافية
+      textInput.addEventListener( 'focus', () =>
+      {
+        document.querySelector( '.textarea-wrapper' ).style.transform = 'scale(1.02)';
+      } );
+
+      textInput.addEventListener( 'blur', () =>
+      {
+        document.querySelector( '.textarea-wrapper' ).style.transform = 'scale(1)';
+      } );
+
+      // دالة لتحويل الأرقام الغربية إلى عربية (لأرقام إضافية إن وجدت)
+      function toArabicNumbers ( text )
+      {
+        return text.replace( /\d/g, d => '٠١٢٣٤٥٦٧٨٩'[ d ] );
+      }
+
+      textInput.addEventListener( 'input', function ( e )
+      {
+        const cursorPos = this.selectionStart;
+        const oldValue = this.value;
+        const newValue = toArabicNumbers( oldValue );
+
+        if ( oldValue !== newValue )
+        {
+          this.value = newValue;
+          this.setSelectionRange( cursorPos, cursorPos );
+          updateOutput();
+        }
+      } );
+    </script>
+  </body>
+
+</html>
